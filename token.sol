@@ -89,6 +89,9 @@ contract SPS {
     
     /// @notice Event used for cross-chain transfers
     event BridgeTransfer(uint256 amount, string externalAddress);
+    
+    /// @notice Event emited when mint() is called
+    event Mint(address account, uint256 amount);
 
     /**
      * @notice Construct a new Comp token
@@ -348,6 +351,7 @@ contract SPS {
     
     function mint(address account, uint256 amount) public minterOnly {
         _mint(account, amount);
+        emit Mint(account, amount);
     }
     
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
