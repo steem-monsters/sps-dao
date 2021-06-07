@@ -81,16 +81,16 @@ contract SPS {
         _;
     }    
     
-    /// @notice Emit when changing admin
+    /// @notice Emitted when changing admin
     event SetAdmin(address _newAdmin);
     
-    /// @notice Emit when changing minter
+    /// @notice Emitted when changing minter
     event SetMinter(address _newMinter);
     
     /// @notice Event used for cross-chain transfers
     event BridgeTransfer(uint256 amount, string externalAddress);
     
-    /// @notice Event emited when mint() is called
+    /// @notice Emitted when mint() function is called
     event Mint(address account, uint256 amount);
 
     /**
