@@ -5,7 +5,7 @@ Start with a copy of the Compound Finance (COMP) token ERC-20 contract (since we
 1. Add admin to COMP token (address that is stored in storage, should be included in constructor at deploy time, has special privs aka `onlyAdmin` or something). Should be able to:
     - update the admin ✔️
     - update minter ✔️
-    - update stake modifier
+    - update stake modifier ✔️
 2. Add minter (privileged address, include in constructor). Should be able to:
     - call mint function ✔️
 3. Mint function should be added. Takes address and amount, and adds amount to address's balance, updating total supply. Only able to be called by the address specified as the "minter". ✔️
