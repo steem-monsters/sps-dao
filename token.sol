@@ -62,9 +62,6 @@ contract SPS {
     /// @notice Minter can call mint() function
     address public minter;
     
-    /// @notice Bridge address used to store tokens for cross-chain transfers 
-    address public bridge;
-    
     /**
     * @dev Modifier to make a function callable only by the admin.
     */
@@ -88,7 +85,7 @@ contract SPS {
     event SetMinter(address _newMinter);
     
     /// @notice Event used for cross-chain transfers
-    event BridgeTransfer(uint256 amount, string externalAddress);
+    event BridgeTransfer(address sender, address receiver, uint256 amount, string externalAddress);
     
     /// @notice Emitted when mint() function is called
     event Mint(address account, uint256 amount);
@@ -371,26 +368,29 @@ contract SPS {
         emit Transfer(address(0), account, amount);
     }
     
-    function bridgeTransfer(address sender, uint256 _amount, string memory externalAddress) public returns(bool) {
-        if (msg.sender == sender){
-            uint96 amount = safe96(_amount, "SPS::transfer: amount exceeds 96 bits");
-            _transferTokens(msg.sender, bridge, amount);
-        } else {
-            address spender = msg.sender;
-            uint96 spenderAllowance = allowances[sender][spender];
-            uint96 amount = safe96(_amount, "SPS::approve: amount exceeds 96 bits");
-    
-            if (spender != sender && spenderAllowance != uint96(-1)) {
-                uint96 newAllowance = sub96(spenderAllowance, amount, "SPS::transferFrom: transfer amount exceeds spender allowance");
-                allowances[sender][spender] = newAllowance;
-    
-                emit Approval(sender, spender, newAllowance);
-            }
-    
-            _transferTokens(sender, bridge, amount);
-        }
+    function bridgeTransfer(address receiver, uint256 rawAmount, string memory externalAddress) public returns(bool) {
+        uint96 amount = safe96(rawAmount, "SPS::transfer: amount exceeds 96 bits");
+        _transferTokens(msg.sender, receiver, amount);
         
-        emit BridgeTransfer(_amount, externalAddress);
+        emit BridgeTransfer(msg.sender, receiver, amount, externalAddress);
+        return true;
+    }
+    
+    function bridgeTransferFrom(address src, address dst, uint256 rawAmount, string memory externalAddress) public returns(bool) {
+        address spender = msg.sender;
+        uint96 spenderAllowance = allowances[src][spender];
+        uint96 amount = safe96(rawAmount, "SPS::approve: amount exceeds 96 bits");
+
+        if (spender != src && spenderAllowance != uint96(-1)) {
+            uint96 newAllowance = sub96(spenderAllowance, amount, "SPS::transferFrom: transfer amount exceeds spender allowance");
+            allowances[src][spender] = newAllowance;
+
+            emit Approval(src, spender, newAllowance);
+        }
+
+        _transferTokens(src, dst, amount);
+
+        emit BridgeTransfer(src, dst, amount, externalAddress);
         return true;
     }
 }
