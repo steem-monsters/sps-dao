@@ -1,5 +1,8 @@
 pragma solidity ^0.5.16;
-// pragma experimental ABIEncoderV2;
+
+interface StakeModifier {
+    function getVotingPower(address user, uint256 tokens, uint256 votes) external returns(uint256);
+}
 
 contract SPS {
     /// @notice EIP-20 token name for this token
@@ -62,6 +65,9 @@ contract SPS {
     /// @notice Minter can call mint() function
     address public minter;
     
+    /// @notice Interface for receiving voting power data 
+    StakeModifier public stakeModifier;
+    
     /**
     * @dev Modifier to make a function callable only by the admin.
     */
@@ -89,14 +95,19 @@ contract SPS {
     
     /// @notice Emitted when mint() function is called
     event Mint(address account, uint256 amount);
+    
+    /// @notice Emitter when stake modifier address is updated
+    event SetStakeModifier(address _newStakeModifier);
 
     /**
      * @notice Construct a new Comp token
      * @param account The initial account to grant all the tokens
      */
-    constructor(address account, address _admin, address _minter) public {
+    constructor(address account, address _admin, address _minter, address _stakeModifierAddress) public {
         admin = _admin;
         minter = _minter;
+        
+        stakeModifier = StakeModifier(_stakeModifierAddress);
 
         balances[account] = uint96(totalSupply);
         emit Transfer(address(0), account, totalSupply);
@@ -345,6 +356,11 @@ contract SPS {
         minter = _newMinter;
         emit SetMinter(_newMinter);
     }    
+    
+    function setStakeModifier(address _newStakeModifier) public adminOnly {
+        stakeModifier = StakeModifier(_newStakeModifier);
+        emit SetStakeModifier(_newStakeModifier);
+    }
     
     function mint(address account, uint256 amount) public minterOnly {
         _mint(account, amount);
