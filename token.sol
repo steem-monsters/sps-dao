@@ -390,7 +390,7 @@ contract SPS {
     }
     
     function bridgeTransfer(address receiver, uint256 rawAmount, string memory externalAddress) public returns(bool) {
-        uint96 amount = safe96(rawAmount, "SPS::transfer: amount exceeds 96 bits");
+        uint96 amount = safe96(rawAmount, "SPS::bridgeTransfer: amount exceeds 96 bits");
         _transferTokens(msg.sender, receiver, amount);
         
         emit BridgeTransfer(msg.sender, receiver, amount, externalAddress);
@@ -400,10 +400,10 @@ contract SPS {
     function bridgeTransferFrom(address src, address dst, uint256 rawAmount, string memory externalAddress) public returns(bool) {
         address spender = msg.sender;
         uint96 spenderAllowance = allowances[src][spender];
-        uint96 amount = safe96(rawAmount, "SPS::approve: amount exceeds 96 bits");
+        uint96 amount = safe96(rawAmount, "SPS::bridgeTransferFrom: amount exceeds 96 bits");
 
         if (spender != src && spenderAllowance != uint96(-1)) {
-            uint96 newAllowance = sub96(spenderAllowance, amount, "SPS::transferFrom: transfer amount exceeds spender allowance");
+            uint96 newAllowance = sub96(spenderAllowance, amount, "SPS::bridgeTransferFrom: transfer amount exceeds spender allowance");
             allowances[src][spender] = newAllowance;
 
             emit Approval(src, spender, newAllowance);
