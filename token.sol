@@ -72,7 +72,7 @@ contract SPS {
     * @dev Modifier to make a function callable only by the admin.
     */
     modifier adminOnly() {
-        require(msg.sender == admin);
+        require(msg.sender == admin, "Only admin");
         _;
     }
     
@@ -80,7 +80,7 @@ contract SPS {
     * @dev Modifier to make a function callable only by the minter.
     */
     modifier minterOnly() {
-        require(msg.sender == minter);
+        require(msg.sender == minter, "Only minter");
         _;
     }    
     
