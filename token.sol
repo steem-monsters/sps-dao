@@ -14,8 +14,8 @@ contract SPS {
     /// @notice EIP-20 token decimals for this token
     uint8 public constant decimals = 18;
 
-    /// @notice Total number of tokens in circulation
-    uint public totalSupply = 3000000e18; // 3 million SPS
+    /// @notice Total starting number of tokens in circulation
+    uint public totalSupply = 0;
 
     /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
