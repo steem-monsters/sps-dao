@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 interface StakeModifier {
-    function getVotingPower(address user) external returns(uint256);
+    function getVotingPower(address user, uint256 votes) external returns(uint256);
 }
 
 contract SPS {
@@ -223,11 +223,14 @@ contract SPS {
      * @return The number of current votes for `account`
      */
     function getCurrentVotes(address account) external returns (uint96) {
+        uint32 nCheckpoints = numCheckpoints[account];
+        uint96 votes = nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
+        
         if (address(stakeModifier) == address(0)){
             return 0;
         }
         
-        uint96 amount = safe96(stakeModifier.getVotingPower(account), "SPS::getCurrentVotes: amount exceeds 96 bits");
+        uint96 amount = safe96(stakeModifier.getVotingPower(account, votes), "SPS::getCurrentVotes: amount exceeds 96 bits");
 
         return amount;
     }
