@@ -1,18 +1,21 @@
 pragma solidity ^0.5.16;
-pragma experimental ABIEncoderV2;
 
-contract Comp {
+interface StakeModifier {
+    function getVotingPower(address user, uint256 votes) external returns(uint256);
+}
+
+contract SPS {
     /// @notice EIP-20 token name for this token
-    string public constant name = "Compound";
+    string public constant name = "Splintershards";
 
     /// @notice EIP-20 token symbol for this token
-    string public constant symbol = "COMP";
+    string public constant symbol = "SPS";
 
     /// @notice EIP-20 token decimals for this token
     uint8 public constant decimals = 18;
 
-    /// @notice Total number of tokens in circulation
-    uint public constant totalSupply = 10000000e18; // 10 million Comp
+    /// @notice Total starting number of tokens in circulation
+    uint public totalSupply = 0;
 
     /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
@@ -55,12 +58,57 @@ contract Comp {
 
     /// @notice The standard EIP-20 approval event
     event Approval(address indexed owner, address indexed spender, uint256 amount);
+    
+    /// @notice Admin can update minter, staker and stake modifier
+    address public admin;
+    
+    /// @notice Minter can call mint() function
+    address public minter;
+    
+    /// @notice Interface for receiving voting power data 
+    StakeModifier public stakeModifier;
+    
+    /**
+    * @dev Modifier to make a function callable only by the admin.
+    */
+    modifier adminOnly() {
+        require(msg.sender == admin, "Only admin");
+        _;
+    }
+    
+    /**
+    * @dev Modifier to make a function callable only by the minter.
+    */
+    modifier minterOnly() {
+        require(msg.sender == minter, "Only minter");
+        _;
+    }    
+    
+    /// @notice Emitted when changing admin
+    event SetAdmin(address _newAdmin);
+    
+    /// @notice Emitted when changing minter
+    event SetMinter(address _newMinter);
+    
+    /// @notice Event used for cross-chain transfers
+    event BridgeTransfer(address sender, address receiver, uint256 amount, string externalAddress);
+    
+    /// @notice Emitted when mint() function is called
+    event Mint(address account, uint256 amount);
+    
+    /// @notice Emitter when stake modifier address is updated
+    event SetStakeModifier(address _newStakeModifier);
 
     /**
      * @notice Construct a new Comp token
      * @param account The initial account to grant all the tokens
      */
-    constructor(address account) public {
+    constructor(address account, address _admin, address _minter, address _stakeModifierAddress) public {
+        admin = _admin;
+        minter = _minter;
+        
+        stakeModifier = StakeModifier(_stakeModifierAddress);
+
         balances[account] = uint96(totalSupply);
         emit Transfer(address(0), account, totalSupply);
     }
@@ -88,7 +136,7 @@ contract Comp {
         if (rawAmount == uint(-1)) {
             amount = uint96(-1);
         } else {
-            amount = safe96(rawAmount, "Comp::approve: amount exceeds 96 bits");
+            amount = safe96(rawAmount, "SPS::approve: amount exceeds 96 bits");
         }
 
         allowances[msg.sender][spender] = amount;
@@ -113,7 +161,7 @@ contract Comp {
      * @return Whether or not the transfer succeeded
      */
     function transfer(address dst, uint rawAmount) external returns (bool) {
-        uint96 amount = safe96(rawAmount, "Comp::transfer: amount exceeds 96 bits");
+        uint96 amount = safe96(rawAmount, "SPS::transfer: amount exceeds 96 bits");
         _transferTokens(msg.sender, dst, amount);
         return true;
     }
@@ -128,10 +176,10 @@ contract Comp {
     function transferFrom(address src, address dst, uint rawAmount) external returns (bool) {
         address spender = msg.sender;
         uint96 spenderAllowance = allowances[src][spender];
-        uint96 amount = safe96(rawAmount, "Comp::approve: amount exceeds 96 bits");
+        uint96 amount = safe96(rawAmount, "SPS::approve: amount exceeds 96 bits");
 
         if (spender != src && spenderAllowance != uint96(-1)) {
-            uint96 newAllowance = sub96(spenderAllowance, amount, "Comp::transferFrom: transfer amount exceeds spender allowance");
+            uint96 newAllowance = sub96(spenderAllowance, amount, "SPS::transferFrom: transfer amount exceeds spender allowance");
             allowances[src][spender] = newAllowance;
 
             emit Approval(src, spender, newAllowance);
@@ -163,9 +211,9 @@ contract Comp {
         bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "Comp::delegateBySig: invalid signature");
-        require(nonce == nonces[signatory]++, "Comp::delegateBySig: invalid nonce");
-        require(now <= expiry, "Comp::delegateBySig: signature expired");
+        require(signatory != address(0), "SPS::delegateBySig: invalid signature");
+        require(nonce == nonces[signatory]++, "SPS::delegateBySig: invalid nonce");
+        require(now <= expiry, "SPS::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -174,20 +222,28 @@ contract Comp {
      * @param account The address to get votes balance
      * @return The number of current votes for `account`
      */
-    function getCurrentVotes(address account) external view returns (uint96) {
+    function getCurrentVotes(address account) external returns (uint96) {
         uint32 nCheckpoints = numCheckpoints[account];
-        return nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
+        uint96 votes = nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
+        
+        if (address(stakeModifier) == address(0)){
+            return 0;
+        }
+        
+        uint96 amount = safe96(stakeModifier.getVotingPower(account, votes), "SPS::getCurrentVotes: amount exceeds 96 bits");
+
+        return amount;
     }
 
     /**
      * @notice Determine the prior number of votes for an account as of a block number
-     * @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
+     * @dev Block number must be a finalizeSPSd block or else this function will revert to prevent misinformation.
      * @param account The address of the account to check
      * @param blockNumber The block number to get the vote balance at
      * @return The number of votes the account had as of the given block
      */
     function getPriorVotes(address account, uint blockNumber) public view returns (uint96) {
-        require(blockNumber < block.number, "Comp::getPriorVotes: not yet determined");
+        require(blockNumber < block.number, "SPS::getPriorVotes: not yet determined");
 
         uint32 nCheckpoints = numCheckpoints[account];
         if (nCheckpoints == 0) {
@@ -231,11 +287,11 @@ contract Comp {
     }
 
     function _transferTokens(address src, address dst, uint96 amount) internal {
-        require(src != address(0), "Comp::_transferTokens: cannot transfer from the zero address");
-        require(dst != address(0), "Comp::_transferTokens: cannot transfer to the zero address");
+        require(src != address(0), "SPS::_transferTokens: cannot transfer from the zero address");
+        require(dst != address(0), "SPS::_transferTokens: cannot transfer to the zero address");
 
-        balances[src] = sub96(balances[src], amount, "Comp::_transferTokens: transfer amount exceeds balance");
-        balances[dst] = add96(balances[dst], amount, "Comp::_transferTokens: transfer amount overflows");
+        balances[src] = sub96(balances[src], amount, "SPS::_transferTokens: transfer amount exceeds balance");
+        balances[dst] = add96(balances[dst], amount, "SPS::_transferTokens: transfer amount overflows");
         emit Transfer(src, dst, amount);
 
         _moveDelegates(delegates[src], delegates[dst], amount);
@@ -246,21 +302,21 @@ contract Comp {
             if (srcRep != address(0)) {
                 uint32 srcRepNum = numCheckpoints[srcRep];
                 uint96 srcRepOld = srcRepNum > 0 ? checkpoints[srcRep][srcRepNum - 1].votes : 0;
-                uint96 srcRepNew = sub96(srcRepOld, amount, "Comp::_moveVotes: vote amount underflows");
+                uint96 srcRepNew = sub96(srcRepOld, amount, "SPS::_moveVotes: vote amount underflows");
                 _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
             }
 
             if (dstRep != address(0)) {
                 uint32 dstRepNum = numCheckpoints[dstRep];
                 uint96 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
-                uint96 dstRepNew = add96(dstRepOld, amount, "Comp::_moveVotes: vote amount overflows");
+                uint96 dstRepNew = add96(dstRepOld, amount, "SPS::_moveVotes: vote amount overflows");
                 _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
             }
         }
     }
 
     function _writeCheckpoint(address delegatee, uint32 nCheckpoints, uint96 oldVotes, uint96 newVotes) internal {
-      uint32 blockNumber = safe32(block.number, "Comp::_writeCheckpoint: block number exceeds 32 bits");
+      uint32 blockNumber = safe32(block.number, "SPS::_writeCheckpoint: block number exceeds 32 bits");
 
       if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber) {
           checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
@@ -297,5 +353,68 @@ contract Comp {
         uint256 chainId;
         assembly { chainId := chainid() }
         return chainId;
+    }
+    
+    function setAdmin(address _newAdmin) public adminOnly {
+        admin = _newAdmin;
+        emit SetAdmin(_newAdmin);
+    }
+    
+    function setMinter(address _newMinter) public adminOnly {
+        minter = _newMinter;
+        emit SetMinter(_newMinter);
+    }    
+    
+    function setStakeModifier(address _newStakeModifier) public adminOnly {
+        stakeModifier = StakeModifier(_newStakeModifier);
+        emit SetStakeModifier(_newStakeModifier);
+    }
+    
+    function mint(address account, uint256 amount) public minterOnly {
+        _mint(account, amount);
+        emit Mint(account, amount);
+    }
+    
+    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
+     * the total supply.
+     *
+     * Emits a {Transfer} event with `from` set to the zero address.
+     *
+     * Requirements:
+     *
+     * - `account` cannot be the zero address.
+     */
+    function _mint(address account, uint256 amount) internal {
+        require(account != address(0), "ERC20: mint to the zero address");
+
+        totalSupply += uint96(amount);
+        balances[account] += uint96(amount);
+        emit Transfer(address(0), account, amount);
+    }
+    
+    function bridgeTransfer(address receiver, uint256 rawAmount, string memory externalAddress) public returns(bool) {
+        uint96 amount = safe96(rawAmount, "SPS::bridgeTransfer: amount exceeds 96 bits");
+        _transferTokens(msg.sender, receiver, amount);
+        
+        emit BridgeTransfer(msg.sender, receiver, amount, externalAddress);
+        return true;
+    }
+    
+    function bridgeTransferFrom(address src, address dst, uint256 rawAmount, string memory externalAddress) public returns(bool) {
+        address spender = msg.sender;
+        uint96 spenderAllowance = allowances[src][spender];
+        uint96 amount = safe96(rawAmount, "SPS::bridgeTransferFrom: amount exceeds 96 bits");
+
+        if (spender != src && spenderAllowance != uint96(-1)) {
+            uint96 newAllowance = sub96(spenderAllowance, amount, "SPS::bridgeTransferFrom: transfer amount exceeds spender allowance");
+            allowances[src][spender] = newAllowance;
+
+            emit Approval(src, spender, newAllowance);
+        }
+
+        _transferTokens(src, dst, amount);
+
+        emit BridgeTransfer(src, dst, amount, externalAddress);
+        return true;
     }
 }
