@@ -83,10 +83,10 @@ contract SPS {
     }
 
     /// @notice Emitted when changing admin
-    event SetAdmin(address newAdmin);
+    event SetAdmin(address indexed newAdmin, address indexed oldAdmin);
 
     /// @notice Emitted when changing minter
-    event SetMinter(address newMinter);
+    event SetMinter(address indexed newMinter, address indexed oldAdmin);
 
     /// @notice Event used for cross-chain transfers
     event BridgeTransfer(address indexed sender, address indexed receiver, uint256 amount, string externalAddress);
@@ -355,15 +355,15 @@ contract SPS {
     }
 
     /// @notice Set new admin address
-    function setAdmin(address _newAdmin) external adminOnly {
-        admin = _newAdmin;
-        emit SetAdmin(_newAdmin);
+    function setAdmin(address newAdmin) external adminOnly {
+        emit SetAdmin(newAdmin, admin);
+        admin = newAdmin;
     }
 
     /// @notice Set new minter address
-    function setMinter(address _newMinter) external adminOnly {
-        minter = _newMinter;
-        emit SetMinter(_newMinter);
+    function setMinter(address newMinter) external adminOnly {
+        emit SetMinter(newMinter, minter);
+        minter = newMinter;
     }
 
     /// @notice Set new stake modifier address
