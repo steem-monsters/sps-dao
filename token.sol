@@ -1,8 +1,6 @@
 pragma solidity ^0.5.16;
 
-interface StakeModifier {
-    function getVotingPower(address user, uint256 votes) external returns(uint256);
-}
+import './interfaces/IStakeModifier.sol';
 
 contract SPS {
     /// @notice EIP-20 token name for this token
@@ -14,8 +12,8 @@ contract SPS {
     /// @notice EIP-20 token decimals for this token
     uint8 public constant decimals = 18;
 
-    /// @notice Total starting number of tokens in circulation
-    uint public totalSupply = 0;
+    /// @notice Initial number of tokens in circulation
+    uint256 public totalSupply = 0;
 
     /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
@@ -58,56 +56,59 @@ contract SPS {
 
     /// @notice The standard EIP-20 approval event
     event Approval(address indexed owner, address indexed spender, uint256 amount);
-    
-    /// @notice Admin can update minter, staker and stake modifier
+
+    /// @notice Admin can update admin, minter and stake modifier
     address public admin;
-    
+
     /// @notice Minter can call mint() function
     address public minter;
-    
-    /// @notice Interface for receiving voting power data 
-    StakeModifier public stakeModifier;
-    
+
+    /// @notice Interface for receiving voting power data
+    IStakeModifier public stakeModifier;
+
     /**
-    * @dev Modifier to make a function callable only by the admin.
-    */
+     * @dev Modifier to make a function callable only by the admin.
+     */
     modifier adminOnly() {
         require(msg.sender == admin, "Only admin");
         _;
     }
-    
+
     /**
-    * @dev Modifier to make a function callable only by the minter.
-    */
+     * @dev Modifier to make a function callable only by the minter.
+     */
     modifier minterOnly() {
         require(msg.sender == minter, "Only minter");
         _;
-    }    
-    
+    }
+
     /// @notice Emitted when changing admin
-    event SetAdmin(address _newAdmin);
-    
+    event SetAdmin(address newAdmin);
+
     /// @notice Emitted when changing minter
-    event SetMinter(address _newMinter);
-    
+    event SetMinter(address newMinter);
+
     /// @notice Event used for cross-chain transfers
-    event BridgeTransfer(address sender, address receiver, uint256 amount, string externalAddress);
-    
+    event BridgeTransfer(address indexed sender, address indexed receiver, uint256 amount, string externalAddress);
+
     /// @notice Emitted when mint() function is called
-    event Mint(address account, uint256 amount);
-    
-    /// @notice Emitter when stake modifier address is updated
-    event SetStakeModifier(address _newStakeModifier);
+    event Mint(address indexed account, uint256 amount);
+
+    /// @notice Emitted when stake modifier address is updated
+    event SetStakeModifier(address indexed newStakeModifier, address indexed oldStakeModifier);
 
     /**
      * @notice Construct a new Comp token
      * @param account The initial account to grant all the tokens
+     * @param adminAddress The address with admin rights
+     * @param minterAddress The address with minter rights
+     * @param stakeModifierAddress The address of stakeModifier contract
      */
-    constructor(address account, address _admin, address _minter, address _stakeModifierAddress) public {
-        admin = _admin;
-        minter = _minter;
-        
-        stakeModifier = StakeModifier(_stakeModifierAddress);
+    constructor(address account, address adminAddress, address minterAddress, address stakeModifierAddress) public {
+        admin = adminAddress;
+        minter = minterAddress;
+
+        stakeModifier = IStakeModifier(stakeModifierAddress);
 
         balances[account] = uint96(totalSupply);
         emit Transfer(address(0), account, totalSupply);
@@ -160,7 +161,7 @@ contract SPS {
      * @param rawAmount The number of tokens to transfer
      * @return Whether or not the transfer succeeded
      */
-    function transfer(address dst, uint rawAmount) external returns (bool) {
+    function transfer(address dst, uint rawAmount) public returns (bool) {
         uint96 amount = safe96(rawAmount, "SPS::transfer: amount exceeds 96 bits");
         _transferTokens(msg.sender, dst, amount);
         return true;
@@ -173,7 +174,7 @@ contract SPS {
      * @param rawAmount The number of tokens to transfer
      * @return Whether or not the transfer succeeded
      */
-    function transferFrom(address src, address dst, uint rawAmount) external returns (bool) {
+    function transferFrom(address src, address dst, uint rawAmount) public returns (bool) {
         address spender = msg.sender;
         uint96 spenderAllowance = allowances[src][spender];
         uint96 amount = safe96(rawAmount, "SPS::approve: amount exceeds 96 bits");
@@ -222,22 +223,20 @@ contract SPS {
      * @param account The address to get votes balance
      * @return The number of current votes for `account`
      */
-    function getCurrentVotes(address account) external returns (uint96) {
+    function getCurrentVotes(address account) external view returns (uint96) {
         uint32 nCheckpoints = numCheckpoints[account];
         uint96 votes = nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
-        
-        if (address(stakeModifier) == address(0)){
-            return 0;
-        }
-        
-        uint96 amount = safe96(stakeModifier.getVotingPower(account, votes), "SPS::getCurrentVotes: amount exceeds 96 bits");
 
-        return amount;
+        if (address(stakeModifier) == address(0)){
+            return votes;
+        }
+
+        return safe96(stakeModifier.getVotingPower(account, votes), "SPS::getCurrentVotes: amount exceeds 96 bits");
     }
 
     /**
      * @notice Determine the prior number of votes for an account as of a block number
-     * @dev Block number must be a finalizeSPSd block or else this function will revert to prevent misinformation.
+     * @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
      * @param account The address of the account to check
      * @param blockNumber The block number to get the vote balance at
      * @return The number of votes the account had as of the given block
@@ -354,35 +353,36 @@ contract SPS {
         assembly { chainId := chainid() }
         return chainId;
     }
-    
-    function setAdmin(address _newAdmin) public adminOnly {
+
+    /// @notice Set new admin address
+    function setAdmin(address _newAdmin) external adminOnly {
         admin = _newAdmin;
         emit SetAdmin(_newAdmin);
     }
-    
-    function setMinter(address _newMinter) public adminOnly {
+
+    /// @notice Set new minter address
+    function setMinter(address _newMinter) external adminOnly {
         minter = _newMinter;
         emit SetMinter(_newMinter);
-    }    
-    
-    function setStakeModifier(address _newStakeModifier) public adminOnly {
-        stakeModifier = StakeModifier(_newStakeModifier);
-        emit SetStakeModifier(_newStakeModifier);
     }
-    
-    function mint(address account, uint256 amount) public minterOnly {
-        _mint(account, amount);
-        emit Mint(account, amount);
+
+    /// @notice Set new stake modifier address
+    function setStakeModifier(address newStakeModifier) external adminOnly {
+        address oldStakeModifier = address(stakeModifier);
+        stakeModifier = IStakeModifier(newStakeModifier);
+        emit SetStakeModifier(newStakeModifier, oldStakeModifier);
     }
-    
-    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
-     * the total supply.
-     *
-     * Emits a {Transfer} event with `from` set to the zero address.
-     *
-     * Requirements:
-     *
-     * - `account` cannot be the zero address.
+
+    /// @notice Mint additional tokens
+    function mint(address toAccount, uint256 amount) external minterOnly {
+        _mint(toAccount, amount);
+        emit Mint(toAccount, amount);
+    }
+
+    /**
+     * @notice Mint additional tokens
+     * @param account The address of the account to check
+     * @param amount The amount of tokens minted
      */
     function _mint(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: mint to the zero address");
@@ -391,30 +391,20 @@ contract SPS {
         balances[account] += uint96(amount);
         emit Transfer(address(0), account, amount);
     }
-    
-    function bridgeTransfer(address receiver, uint256 rawAmount, string memory externalAddress) public returns(bool) {
-        uint96 amount = safe96(rawAmount, "SPS::bridgeTransfer: amount exceeds 96 bits");
-        _transferTokens(msg.sender, receiver, amount);
-        
-        emit BridgeTransfer(msg.sender, receiver, amount, externalAddress);
-        return true;
+
+    /**
+     * @notice Transfer tokens to cross-chain bridge
+     * @param dst The address of the destination account
+     * @param rawAmount The amount of tokens transfered
+     * @param externalAddress The address on another chain
+     */
+    function bridgeTransfer(address dst, uint256 rawAmount, string calldata externalAddress) external returns(bool) {
+        emit BridgeTransfer(msg.sender, dst, rawAmount, externalAddress);
+        transfer(dst, rawAmount);
     }
-    
-    function bridgeTransferFrom(address src, address dst, uint256 rawAmount, string memory externalAddress) public returns(bool) {
-        address spender = msg.sender;
-        uint96 spenderAllowance = allowances[src][spender];
-        uint96 amount = safe96(rawAmount, "SPS::bridgeTransferFrom: amount exceeds 96 bits");
 
-        if (spender != src && spenderAllowance != uint96(-1)) {
-            uint96 newAllowance = sub96(spenderAllowance, amount, "SPS::bridgeTransferFrom: transfer amount exceeds spender allowance");
-            allowances[src][spender] = newAllowance;
-
-            emit Approval(src, spender, newAllowance);
-        }
-
-        _transferTokens(src, dst, amount);
-
-        emit BridgeTransfer(src, dst, amount, externalAddress);
-        return true;
+    function bridgeTransferFrom(address src, address dst, uint256 rawAmount, string calldata externalAddress) external returns(bool) {
+        emit BridgeTransfer(src, dst, rawAmount, externalAddress);
+        transferFrom(src, dst, rawAmount);
     }
 }
