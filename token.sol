@@ -373,7 +373,7 @@ contract SPS {
     }
 
     /// @notice Mint additional tokens
-    function mint(address account, uint256 amount) public minterOnly {
+    function mint(address account, uint256 amount) external minterOnly {
         _mint(account, amount);
         emit Mint(account, amount);
     }
