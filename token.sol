@@ -366,9 +366,8 @@ contract SPS {
 
     /// @notice Set new stake modifier address
     function setStakeModifier(address newStakeModifier) external adminOnly {
-        address oldStakeModifier = address(stakeModifier);
+        emit SetStakeModifier(newStakeModifier, address(stakeModifier));
         stakeModifier = IStakeModifier(newStakeModifier);
-        emit SetStakeModifier(newStakeModifier, oldStakeModifier);
     }
 
     /// @notice Mint additional tokens
