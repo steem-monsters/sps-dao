@@ -226,12 +226,10 @@ contract SPS {
         uint96 votes = nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
 
         if (address(stakeModifier) == address(0)){
-            return 0;
+            return votes;
         }
 
-        uint96 amount = safe96(stakeModifier.getVotingPower(account, votes), "SPS::getCurrentVotes: amount exceeds 96 bits");
-
-        return amount;
+        return safe96(stakeModifier.getVotingPower(account, votes), "SPS::getCurrentVotes: amount exceeds 96 bits");
     }
 
     /**
