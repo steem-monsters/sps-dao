@@ -57,7 +57,7 @@ contract SPS {
     /// @notice The standard EIP-20 approval event
     event Approval(address indexed owner, address indexed spender, uint256 amount);
 
-    /// @notice Admin can update minter, staker and stake modifier
+    /// @notice Admin can update admin, minter and stake modifier
     address public admin;
 
     /// @notice Minter can call mint() function
@@ -67,16 +67,16 @@ contract SPS {
     StakeModifier public stakeModifier;
 
     /**
-    * @dev Modifier to make a function callable only by the admin.
-    */
+     * @dev Modifier to make a function callable only by the admin.
+     */
     modifier adminOnly() {
         require(msg.sender == admin, "Only admin");
         _;
     }
 
     /**
-    * @dev Modifier to make a function callable only by the minter.
-    */
+     * @dev Modifier to make a function callable only by the minter.
+     */
     modifier minterOnly() {
         require(msg.sender == minter, "Only minter");
         _;
