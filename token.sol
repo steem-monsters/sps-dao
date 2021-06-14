@@ -81,19 +81,19 @@ contract SPS {
     }
 
     /// @notice Emitted when changing admin
-    event SetAdmin(address _newAdmin);
+    event SetAdmin(address indexed newAdmin, address indexed oldAdmin);
 
     /// @notice Emitted when changing minter
-    event SetMinter(address _newMinter);
+    event SetMinter(address indexed newMinter, address indexed oldAdmin);
 
     /// @notice Event used for cross-chain transfers
-    event BridgeTransfer(address sender, address receiver, uint256 amount, string externalAddress);
+    event BridgeTransfer(address indexed sender, address indexed receiver, uint256 amount, string externalAddress);
 
     /// @notice Emitted when mint() function is called
-    event Mint(address account, uint256 amount);
+    event Mint(address indexed account, uint256 amount);
 
-    /// @notice Emitter when stake modifier address is updated
-    event SetStakeModifier(address _newStakeModifier);
+    /// @notice Emitted when stake modifier address is updated
+    event SetStakeModifier(address indexed newStakeModifier, address indexed oldStakeModifier);
 
     /**
      * @notice Construct a new Comp token
@@ -355,21 +355,22 @@ contract SPS {
     }
 
     /// @notice Set new admin address
-    function setAdmin(address _newAdmin) public adminOnly {
-        admin = _newAdmin;
-        emit SetAdmin(_newAdmin);
+    function setAdmin(address newAdmin) external adminOnly {
+        emit SetAdmin(newAdmin, admin);
+        admin = newAdmin;
     }
 
     /// @notice Set new minter address
-    function setMinter(address _newMinter) public adminOnly {
-        minter = _newMinter;
-        emit SetMinter(_newMinter);
+    function setMinter(address newMinter) external adminOnly {
+        emit SetMinter(newMinter, minter);
+        minter = newMinter;
     }
 
     /// @notice Set new stake modifier address
-    function setStakeModifier(address _newStakeModifier) public adminOnly {
-        stakeModifier = StakeModifier(_newStakeModifier);
-        emit SetStakeModifier(_newStakeModifier);
+    function setStakeModifier(address newStakeModifier) external adminOnly {
+        address oldStakeModifier = address(stakeModifier);
+        stakeModifier = IStakeModifier(newStakeModifier);
+        emit SetStakeModifier(newStakeModifier, oldStakeModifier);
     }
 
     /// @notice Mint additional tokens
