@@ -64,7 +64,7 @@ contract SPS {
     address public minter;
 
     /// @notice Interface for receiving voting power data
-    StakeModifier public stakeModifier;
+    IStakeModifier public stakeModifier;
 
     /**
      * @dev Modifier to make a function callable only by the admin.
@@ -387,7 +387,7 @@ contract SPS {
         require(account != address(0), "ERC20: mint to the zero address");
 
         totalSupply += uint96(amount);
-        balances[account] = safe96(uint256(balances[account]) + amount, "SPS::_mint: amount exceeds 96 bits")
+        balances[account] = safe96(uint256(balances[account]) + amount, "SPS::_mint: amount exceeds 96 bits");
         emit Transfer(address(0), account, amount);
     }
 
