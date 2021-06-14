@@ -1,5 +1,7 @@
 pragma solidity ^0.5.16;
 
+import './interfaces/IStakeModifier.sol';
+
 contract SPS {
     /// @notice EIP-20 token name for this token
     string public constant name = "Splintershards";
