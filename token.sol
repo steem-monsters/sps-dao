@@ -10,7 +10,7 @@ contract SPS {
     /// @notice EIP-20 token decimals for this token
     uint8 public constant decimals = 18;
 
-    /// @notice Total starting number of tokens in circulation
+    /// @notice Initial number of tokens in circulation
     uint public totalSupply = 0;
 
     /// @notice Allowance amounts on behalf of others
@@ -98,6 +98,9 @@ contract SPS {
     /**
      * @notice Construct a new Comp token
      * @param account The initial account to grant all the tokens
+     * @param adminAddress The address with admin rights
+     * @param minterAddress The address with minter rights
+     * @param stakeModifierAddress The address of stakeModifier contract
      */
     constructor(address account, address _admin, address _minter, address _stakeModifierAddress) public {
         admin = _admin;
@@ -233,7 +236,7 @@ contract SPS {
 
     /**
      * @notice Determine the prior number of votes for an account as of a block number
-     * @dev Block number must be a finalizeSPSd block or else this function will revert to prevent misinformation.
+     * @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
      * @param account The address of the account to check
      * @param blockNumber The block number to get the vote balance at
      * @return The number of votes the account had as of the given block
@@ -351,34 +354,34 @@ contract SPS {
         return chainId;
     }
 
+    /// @notice Set new admin address
     function setAdmin(address _newAdmin) public adminOnly {
         admin = _newAdmin;
         emit SetAdmin(_newAdmin);
     }
 
+    /// @notice Set new minter address
     function setMinter(address _newMinter) public adminOnly {
         minter = _newMinter;
         emit SetMinter(_newMinter);
     }
 
+    /// @notice Set new stake modifier address
     function setStakeModifier(address _newStakeModifier) public adminOnly {
         stakeModifier = StakeModifier(_newStakeModifier);
         emit SetStakeModifier(_newStakeModifier);
     }
 
+    /// @notice Mint additional tokens
     function mint(address account, uint256 amount) public minterOnly {
         _mint(account, amount);
         emit Mint(account, amount);
     }
 
-    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
-     * the total supply.
-     *
-     * Emits a {Transfer} event with `from` set to the zero address.
-     *
-     * Requirements:
-     *
-     * - `account` cannot be the zero address.
+    /**
+     * @notice Mint additional tokens
+     * @param account The address of the account to check
+     * @param amount The amount of tokens minted
      */
     function _mint(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: mint to the zero address");
@@ -388,6 +391,12 @@ contract SPS {
         emit Transfer(address(0), account, amount);
     }
 
+    /**
+     * @notice Transfer tokens to cross-chain bridge
+     * @param dst The address of the destination account
+     * @param rawAmount The amount of tokens transfered
+     * @param externalAddress The address on another chain
+     */
     function bridgeTransfer(address receiver, uint256 rawAmount, string memory externalAddress) public returns(bool) {
         uint96 amount = safe96(rawAmount, "SPS::bridgeTransfer: amount exceeds 96 bits");
         _transferTokens(msg.sender, receiver, amount);
