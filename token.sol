@@ -102,15 +102,15 @@ contract SPS {
      * @param minterAddress The address with minter rights
      * @param stakeModifierAddress The address of stakeModifier contract
      */
-    constructor(address account, address _admin, address _minter, address _stakeModifierAddress) public {
-        admin = _admin;
-        minter = _minter;
+     constructor(address account, address adminAddress, address minterAddress, address stakeModifierAddress) public {
+         admin = adminAddress;
+         minter = minterAddress;
 
-        stakeModifier = StakeModifier(_stakeModifierAddress);
+         stakeModifier = IStakeModifier(stakeModifierAddress);
 
-        balances[account] = uint96(totalSupply);
-        emit Transfer(address(0), account, totalSupply);
-    }
+         balances[account] = uint96(totalSupply);
+         emit Transfer(address(0), account, totalSupply);
+     }
 
     /**
      * @notice Get the number of tokens `spender` is approved to spend on behalf of `account`
