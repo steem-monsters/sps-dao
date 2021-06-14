@@ -1,9 +1,5 @@
 pragma solidity ^0.5.16;
 
-interface StakeModifier {
-    function getVotingPower(address user, uint256 votes) external returns(uint256);
-}
-
 contract SPS {
     /// @notice EIP-20 token name for this token
     string public constant name = "Splintershards";
@@ -58,16 +54,16 @@ contract SPS {
 
     /// @notice The standard EIP-20 approval event
     event Approval(address indexed owner, address indexed spender, uint256 amount);
-    
+
     /// @notice Admin can update minter, staker and stake modifier
     address public admin;
-    
+
     /// @notice Minter can call mint() function
     address public minter;
-    
-    /// @notice Interface for receiving voting power data 
+
+    /// @notice Interface for receiving voting power data
     StakeModifier public stakeModifier;
-    
+
     /**
     * @dev Modifier to make a function callable only by the admin.
     */
@@ -75,27 +71,27 @@ contract SPS {
         require(msg.sender == admin, "Only admin");
         _;
     }
-    
+
     /**
     * @dev Modifier to make a function callable only by the minter.
     */
     modifier minterOnly() {
         require(msg.sender == minter, "Only minter");
         _;
-    }    
-    
+    }
+
     /// @notice Emitted when changing admin
     event SetAdmin(address _newAdmin);
-    
+
     /// @notice Emitted when changing minter
     event SetMinter(address _newMinter);
-    
+
     /// @notice Event used for cross-chain transfers
     event BridgeTransfer(address sender, address receiver, uint256 amount, string externalAddress);
-    
+
     /// @notice Emitted when mint() function is called
     event Mint(address account, uint256 amount);
-    
+
     /// @notice Emitter when stake modifier address is updated
     event SetStakeModifier(address _newStakeModifier);
 
@@ -106,7 +102,7 @@ contract SPS {
     constructor(address account, address _admin, address _minter, address _stakeModifierAddress) public {
         admin = _admin;
         minter = _minter;
-        
+
         stakeModifier = StakeModifier(_stakeModifierAddress);
 
         balances[account] = uint96(totalSupply);
@@ -225,11 +221,11 @@ contract SPS {
     function getCurrentVotes(address account) external returns (uint96) {
         uint32 nCheckpoints = numCheckpoints[account];
         uint96 votes = nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
-        
+
         if (address(stakeModifier) == address(0)){
             return 0;
         }
-        
+
         uint96 amount = safe96(stakeModifier.getVotingPower(account, votes), "SPS::getCurrentVotes: amount exceeds 96 bits");
 
         return amount;
@@ -354,27 +350,27 @@ contract SPS {
         assembly { chainId := chainid() }
         return chainId;
     }
-    
+
     function setAdmin(address _newAdmin) public adminOnly {
         admin = _newAdmin;
         emit SetAdmin(_newAdmin);
     }
-    
+
     function setMinter(address _newMinter) public adminOnly {
         minter = _newMinter;
         emit SetMinter(_newMinter);
-    }    
-    
+    }
+
     function setStakeModifier(address _newStakeModifier) public adminOnly {
         stakeModifier = StakeModifier(_newStakeModifier);
         emit SetStakeModifier(_newStakeModifier);
     }
-    
+
     function mint(address account, uint256 amount) public minterOnly {
         _mint(account, amount);
         emit Mint(account, amount);
     }
-    
+
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
      * the total supply.
      *
@@ -391,15 +387,15 @@ contract SPS {
         balances[account] += uint96(amount);
         emit Transfer(address(0), account, amount);
     }
-    
+
     function bridgeTransfer(address receiver, uint256 rawAmount, string memory externalAddress) public returns(bool) {
         uint96 amount = safe96(rawAmount, "SPS::bridgeTransfer: amount exceeds 96 bits");
         _transferTokens(msg.sender, receiver, amount);
-        
+
         emit BridgeTransfer(msg.sender, receiver, amount, externalAddress);
         return true;
     }
-    
+
     function bridgeTransferFrom(address src, address dst, uint256 rawAmount, string memory externalAddress) public returns(bool) {
         address spender = msg.sender;
         uint96 spenderAllowance = allowances[src][spender];
