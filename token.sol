@@ -13,7 +13,7 @@ contract SPS {
     uint8 public constant decimals = 18;
 
     /// @notice Initial number of tokens in circulation
-    uint public totalSupply = 0;
+    uint256 public totalSupply = 0;
 
     /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
