@@ -106,9 +106,6 @@ contract SPS {
          minter = minterAddress;
 
          stakeModifier = IStakeModifier(stakeModifierAddress);
-
-         balances[account] = uint96(totalSupply);
-         emit Transfer(address(0), account, totalSupply);
      }
 
     /**
