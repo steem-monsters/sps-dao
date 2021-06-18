@@ -96,12 +96,11 @@ contract SPS {
 
     /**
      * @notice Construct a new Comp token
-     * @param account The initial account to grant all the tokens
      * @param adminAddress The address with admin rights
      * @param minterAddress The address with minter rights
      * @param stakeModifierAddress The address of stakeModifier contract
      */
-     constructor(address account, address adminAddress, address minterAddress, address stakeModifierAddress) public {
+     constructor(address adminAddress, address minterAddress, address stakeModifierAddress) public {
          admin = adminAddress;
          minter = minterAddress;
 
