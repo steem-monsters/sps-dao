@@ -348,30 +348,38 @@ contract SPS {
         return chainId;
     }
 
-    /// @notice Set new admin address
-    /// @param newAdmin New admin address
+    /**
+     * @notice Set new admin address
+     * @param newAdmin New admin address
+     */
     function setAdmin(address newAdmin) external adminOnly {
         emit SetAdmin(newAdmin, admin);
         admin = newAdmin;
     }
 
-    /// @notice Set new minter address
-    /// @param newMinter New minter address
+    /**
+     * @notice Set new minter address
+     * @param newMinter New minter address
+     */
     function setMinter(address newMinter) external adminOnly {
         emit SetMinter(newMinter, minter);
         minter = newMinter;
     }
 
-    /// @notice Set new stake modifier address
-    /// @param newStakeModifier New stake modifer contract address
+    /**
+     * @notice Set new stake modifier address
+     * @param newStakeModifier New stake modifer contract address
+     */
     function setStakeModifier(address newStakeModifier) external adminOnly {
         emit SetStakeModifier(newStakeModifier, address(stakeModifier));
         stakeModifier = IStakeModifier(newStakeModifier);
     }
 
-    /// @notice Mint additional tokens
-    /// @param toAccount Account receiving new tokens
-    /// @param amount Amount of minted tokens
+    /**
+     * @notice Mint additional tokens
+     * @param toAccount Account receiving new tokens
+     * @param amount Amount of minted tokens
+     */
     function mint(address toAccount, uint256 amount) external minterOnly {
         _mint(toAccount, amount);
     }
