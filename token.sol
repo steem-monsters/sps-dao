@@ -391,24 +391,24 @@ contract SPS {
 
     /**
      * @notice Transfer tokens to cross-chain bridge
-     * @param dst The address of the destination account
+     * @param bridgeAddress The address of the bridge account
      * @param rawAmount The amount of tokens transfered
      * @param externalAddress The address on another chain
      */
-     function bridgeTransfer(address dst, uint256 rawAmount, string calldata externalAddress) external returns(bool) {
-         emit BridgeTransfer(msg.sender, dst, rawAmount, externalAddress);
-         transfer(dst, rawAmount);
+     function bridgeTransfer(address bridgeAddress, uint256 rawAmount, string calldata externalAddress) external returns(bool) {
+         emit BridgeTransfer(msg.sender, bridgeAddress, rawAmount, externalAddress);
+         transfer(bridgeAddress, rawAmount);
      }
 
      /**
       * @notice Transfer tokens from address to cross-chain bridge
-      * @param src The address of the source account
-      * @param dst The address of the destination account
+      * @param sourceAddress The address of the source account
+      * @param bridgeAddress The address of the bridge account
       * @param rawAmount The amount of tokens transfered
       * @param externalAddress The address on another chain
       */
-     function bridgeTransferFrom(address src, address dst, uint256 rawAmount, string calldata externalAddress) external returns(bool) {
-         emit BridgeTransfer(src, dst, rawAmount, externalAddress);
-         transferFrom(src, dst, rawAmount);
+     function bridgeTransferFrom(address sourceAddress, address bridgeAddress, uint256 rawAmount, string calldata externalAddress) external returns(bool) {
+         emit BridgeTransfer(sourceAddress, bridgeAddress, rawAmount, externalAddress);
+         transferFrom(sourceAddress, bridgeAddress, rawAmount);
      }
 }
