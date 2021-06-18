@@ -352,26 +352,31 @@ contract SPS {
     }
 
     /// @notice Set new admin address
+    /// @param newAdmin New admin address
     function setAdmin(address newAdmin) external adminOnly {
         emit SetAdmin(newAdmin, admin);
         admin = newAdmin;
     }
 
     /// @notice Set new minter address
+    /// @param newMinter New minter address
     function setMinter(address newMinter) external adminOnly {
         emit SetMinter(newMinter, minter);
         minter = newMinter;
     }
 
     /// @notice Set new stake modifier address
+    /// @param newStakeModifier New stake modifer contract address
     function setStakeModifier(address newStakeModifier) external adminOnly {
         emit SetStakeModifier(newStakeModifier, address(stakeModifier));
         stakeModifier = IStakeModifier(newStakeModifier);
     }
 
     /// @notice Mint additional tokens
-    function mint(address account, uint256 amount) external minterOnly {
-        _mint(account, amount);
+    /// @param toAccount Account receiving new tokens
+    /// @param amount Amount of minted tokens
+    function mint(address toAccount, uint256 amount) external minterOnly {
+        _mint(toAccount, amount);
     }
 
     /**
@@ -398,6 +403,13 @@ contract SPS {
          transfer(dst, rawAmount);
      }
 
+     /**
+      * @notice Transfer tokens from address to cross-chain bridge
+      * @param src The address of the source account
+      * @param dst The address of the destination account
+      * @param rawAmount The amount of tokens transfered
+      * @param externalAddress The address on another chain
+      */
      function bridgeTransferFrom(address src, address dst, uint256 rawAmount, string calldata externalAddress) external returns(bool) {
          emit BridgeTransfer(src, dst, rawAmount, externalAddress);
          transferFrom(src, dst, rawAmount);
