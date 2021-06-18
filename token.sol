@@ -91,9 +91,6 @@ contract SPS {
     /// @notice Event used for cross-chain transfers
     event BridgeTransfer(address indexed sender, address indexed receiver, uint256 amount, string externalAddress);
 
-    /// @notice Emitted when mint() function is called
-    event Mint(address indexed account, uint256 amount);
-
     /// @notice Emitted when stake modifier address is updated
     event SetStakeModifier(address indexed newStakeModifier, address indexed oldStakeModifier);
 
@@ -375,7 +372,6 @@ contract SPS {
     /// @notice Mint additional tokens
     function mint(address account, uint256 amount) external minterOnly {
         _mint(account, amount);
-        emit Mint(account, amount);
     }
 
     /**
