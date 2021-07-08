@@ -219,12 +219,7 @@ contract SPS {
     function getCurrentVotes(address account) external view returns (uint96) {
         uint32 nCheckpoints = numCheckpoints[account];
         uint96 votes = nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
-
-        if (address(stakeModifier) == address(0)){
-            return votes;
-        }
-
-        return safe96(stakeModifier.getVotingPower(account, votes), "SPS::getCurrentVotes: amount exceeds 96 bits");
+        return getModifiedVotes(account, votes);
     }
 
     /**
@@ -244,7 +239,8 @@ contract SPS {
 
         // First check most recent balance
         if (checkpoints[account][nCheckpoints - 1].fromBlock <= blockNumber) {
-            return checkpoints[account][nCheckpoints - 1].votes;
+            uint96 votes = checkpoints[account][nCheckpoints - 1].votes;
+            return getModifiedVotes(account, votes);
         }
 
         // Next check implicit zero balance
@@ -265,7 +261,20 @@ contract SPS {
                 upper = center - 1;
             }
         }
-        return checkpoints[account][lower].votes;
+        uint96 votes = checkpoints[account][lower].votes;
+        return getModifiedVotes(account, votes);
+    }
+
+    /**
+     * @notice Determines the number of votes an account has after modifications by the StakeModifier
+     * @param account The address of the account to check
+     * @param votes The initial, unmodified number of votes, read from storage
+     */
+    function getModifiedVotes(address account, uint96 votes) internal view returns (uint96) {
+        if (address(stakeModifier) == address(0)){
+            return votes;
+        }
+        return safe96(stakeModifier.getVotingPower(account, votes), "SPS::getModifiedVotes: amount exceeds 96 bits");
     }
 
     function _delegate(address delegator, address delegatee) internal {
