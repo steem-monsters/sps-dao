@@ -148,6 +148,17 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712 {
     }
 
     /**
+     * @notice Returns the current voting power of an address.
+     * @dev In this simplified version, the voting power is equivalent to the address's token balance.
+     * If your implementation involves delegated votes, adjust the logic to include those calculations.
+     * @param account The address to query the voting power of.
+     * @return The current voting power of the address.
+     */
+    function getCurrentVotes(address account) public view returns (uint256) {
+        return balanceOf(account);
+    }
+
+    /**
      * @notice Grants a specific role to an account.
      * Only accounts with the admin role for the given role can grant it to others.
      * Emits a {RoleGranted} event.
