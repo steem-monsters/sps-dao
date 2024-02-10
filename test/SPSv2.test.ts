@@ -1,6 +1,6 @@
-import { ethers, waffle } from "hardhat";
+import { ethers } from "hardhat";
 import { expect } from "chai";
-import { SPS } from "../typechain"; // Adjust the import path based on your Hardhat setup
+import { SPS } from "../typechain/contracts/SPSv2.sol";
 
 describe("SPS Contract", function () {
   let sps: SPS;

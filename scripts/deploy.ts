@@ -13,9 +13,10 @@ async function main() {
     const spsV2 = await SPSv2.deploy(); // Add constructor arguments inside deploy() if your contract requires them
 
     // Wait for the contract to be deployed
-    await spsV2.deployed();
+    await spsV2.waitForDeployment();
 
-    console.log(`SPSv2 deployed to: ${spsV2.address}`);
+    console.log("SPSv2 deployed to:",await spsV2.getAddress());
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere

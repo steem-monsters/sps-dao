@@ -22,32 +22,33 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712 {
     bytes32 public constant DELEGATION_TYPEHASH = keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
 
     // Mapping to store voting checkpoints for each account.
-    mapping(address => mapping(uint256 => Checkpoint)) public checkpoints;
+    // mapping(address => mapping(uint256 => Checkpoint)) public checkpoints;
     // Mapping to store the number of checkpoints for each account.
-    mapping(address => uint256) public numCheckpoints;
+    // mapping(address => uint256) public numCheckpoints;
     // Mapping to store the delegatee for each account.
-    mapping(address => address) public delegates;
+    // mapping(address => address) public delegates;
     // Mapping to store nonces for each account, used for delegateBySig function.
-    mapping(address => uint256) public nonces;
+    // mapping(address => uint256) public nonces;
 
     // Struct to represent vote checkpoints.
-    struct Checkpoint {
-        uint32 fromBlock;
-        uint256 votes;
-    }
+    // struct Checkpoint {
+    //     uint32 fromBlock;
+    //     uint256 votes;
+    // }
 
     // Events for logging changes in delegation and vote balances.
-    event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
-    event DelegateVotesChanged(address indexed delegate, uint256 previousVotes, uint256 newVotes);
+    // event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
+    // event DelegateVotesChanged(address indexed delegate, uint256 previousVotes, uint256 newVotes);
 
     /**
      * @dev Sets the values for {name} and {symbol}, initializes EIP-712 domain separator.
      * All two of these values are immutable: they can only be set once during construction.
      */
     constructor() ERC20("Splintershards", "SPS") EIP712("Splintershards", "1") {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender); // Assigning the deployer as the default admin.
-        _setupRole(ADMIN_ROLE, msg.sender); // Also assigning admin role explicitly to the deployer.
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender); // Granting the deployer the default admin role directly.
+        _grantRole(ADMIN_ROLE, msg.sender); // Also granting admin role explicitly to the deployer.
     }
+
 
     /**
      * @dev Mints `amount` tokens to address `to`, requires the caller to have MINTER_ROLE.
@@ -57,16 +58,16 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712 {
      */
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) nonReentrant {
         _mint(to, amount);
-        _moveDelegates(address(0), delegates[to], amount);
+        // _moveDelegates(address(0), delegates[to], amount);
     }
 
     /**
      * @dev Delegates voting power of the caller to the delegatee `delegatee`.
      * @param delegatee The address to which the caller's voting power will be delegated.
      */
-    function delegate(address delegatee) public nonReentrant {
-        _delegate(msg.sender, delegatee);
-    }
+    // function delegate(address delegatee) public nonReentrant {
+    //     _delegate(msg.sender, delegatee);
+    // }
 
     /**
      * @dev Delegates voting power to `delegatee` using an off-chain signature.
@@ -77,14 +78,14 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712 {
      * @param r Half of the ECDSA signature pair.
      * @param s Half of the ECDSA signature pair.
      */
-    function delegateBySig(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) public nonReentrant {
-        bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
-        bytes32 digest = _hashTypedDataV4(structHash);
-        address signatory = ECDSA.recover(digest, v, r, s);
-        require(nonce == nonces[signatory]++, "SPS::delegateBySig: invalid nonce");
-        require(block.timestamp <= expiry, "SPS::delegateBySig: signature expired");
-        _delegate(signatory, delegatee);
-    }
+    // function delegateBySig(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) public nonReentrant {
+    //     bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
+    //     bytes32 digest = _hashTypedDataV4(structHash);
+    //     address signatory = ECDSA.recover(digest, v, r, s);
+    //     require(nonce == nonces[signatory]++, "SPS::delegateBySig: invalid nonce");
+    //     require(block.timestamp <= expiry, "SPS::delegateBySig: signature expired");
+    //     _delegate(signatory, delegatee);
+    // }
 
     /**
      * @dev Internal function to delegate a user's voting power to a delegatee.
@@ -92,60 +93,59 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712 {
      * @param delegator The address delegating its voting power.
      * @param delegatee The address receiving the voting power.
      */
-    function _delegate(address delegator, address delegatee) internal {
-        address currentDelegate = delegates[delegator];
-        uint256 delegatorBalance = balanceOf(delegator);
-        delegates[delegator] = delegatee;
+    // function _delegate(address delegator, address delegatee) internal {
+    //     address currentDelegate = delegates[delegator];
+    //     uint256 delegatorBalance = balanceOf(delegator);
+    //     delegates[delegator] = delegatee;
 
-        emit DelegateChanged(delegator, currentDelegate, delegatee);
+    //     emit DelegateChanged(delegator, currentDelegate, delegatee);
 
-        _moveDelegates(currentDelegate, delegatee, delegatorBalance);
-    }
-
-    /**
-     * @dev Internal function to move delegates between addresses when tokens are transferred.
-     * Ensures that vote balances are updated in accordance with token transfers.
-     * @param srcRep The source address from which the votes are being moved.
-     * @param dstRep The destination address to which the votes are being moved.
-     * @param amount The amount of tokens being transferred.
-     */
-    function _moveDelegates(address srcRep, address dstRep, uint256 amount) internal {
-        if (srcRep != dstRep && amount > 0) {
-            if (srcRep != address(0)) {
-                uint32 srcRepNum = uint32(numCheckpoints[srcRep]);
-                uint256 srcRepOld = srcRepNum > 0 ? checkpoints[srcRep][srcRepNum - 1].votes : 0;
-                uint256 srcRepNew = srcRepOld + amount;
-
-                _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
-                emit DelegateVotesChanged(srcRep, srcRepOld, srcRepNew);
-            }
-
-            if (dstRep != address(0)) {
-                uint32 dstRepNum = uint32(numCheckpoints[dstRep]);
-                uint256 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
-                uint256 dstRepNew = dstRepOld + amount;
-
-                _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
-                emit DelegateVotesChanged(dstRep, dstRepOld, dstRepNew);
-            }
-        }
-    }
+    //     _moveDelegates(currentDelegate, delegatee, delegatorBalance);
+    // }
 
     /**
-     * @dev Internal function to write a checkpoint for an address's vote count.
-     * @param delegatee The address whose vote count is being checkpointed.
-     * @param nCheckpoints The number of checkpoints the address currently has.
-     * @param oldVotes The previous number of votes the address had.
-     * @param newVotes The new number of votes the address will have.
-     */
-    function _writeCheckpoint(address delegatee, uint32 nCheckpoints, uint256 oldVotes, uint256 newVotes) internal {
-        if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == block.number) {
-            checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
-        } else {
-            checkpoints[delegatee][nCheckpoints] = Checkpoint(uint32(block.number), newVotes);
-            numCheckpoints[delegatee] = nCheckpoints + 1;
-        }
-    }
+    * @dev Internal function to move delegates between addresses when tokens are transferred.
+    * Ensures that vote balances are updated in accordance with token transfers.
+    * @param srcRep The source address from which the votes are being moved.
+    * @param dstRep The destination address to which the votes are being moved.
+    * @param amount The amount of tokens being transferred.
+    */
+    // function _moveDelegates(address srcRep, address dstRep, uint256 amount) internal {
+    //     if (srcRep != dstRep && amount > 0) {
+    //         if (srcRep != address(0)) {
+    //             uint32 srcRepNum = uint32(numCheckpoints[srcRep]);
+    //             uint256 srcRepOld = srcRepNum > 0 ? checkpoints[srcRep][srcRepNum - 1].votes : 0;
+    //             uint256 srcRepNew = srcRepOld + amount;
+
+    //             _writeCheckpoint(srcRep, srcRepNum, srcRepNew); // Updated call
+    //             emit DelegateVotesChanged(srcRep, srcRepOld, srcRepNew);
+    //         }
+
+    //         if (dstRep != address(0)) {
+    //             uint32 dstRepNum = uint32(numCheckpoints[dstRep]);
+    //             uint256 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
+    //             uint256 dstRepNew = dstRepOld + amount;
+
+    //             _writeCheckpoint(dstRep, dstRepNum, dstRepNew); // Updated call
+    //             emit DelegateVotesChanged(dstRep, dstRepOld, dstRepNew);
+    //         }
+    //     }
+    // }
+
+    /**
+    * @dev Internal function to write a checkpoint for an address's vote count.
+    * @param delegatee The address whose vote count is being checkpointed.
+    * @param nCheckpoints The number of checkpoints the address currently has.
+    * @param newVotes The new number of votes the address will have.
+    */
+    // function _writeCheckpoint(address delegatee, uint32 nCheckpoints, uint256 newVotes) internal {
+    //     if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == block.number) {
+    //         checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
+    //     } else {
+    //         checkpoints[delegatee][nCheckpoints] = Checkpoint(uint32(block.number), newVotes);
+    //         numCheckpoints[delegatee] = nCheckpoints + 1;
+    //     }
+    // }
 
     /**
      * @notice Returns the current voting power of an address.
@@ -154,9 +154,9 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712 {
      * @param account The address to query the voting power of.
      * @return The current voting power of the address.
      */
-    function getCurrentVotes(address account) public view returns (uint256) {
-        return balanceOf(account);
-    }
+    // function getCurrentVotes(address account) public view returns (uint256) {
+    //     return balanceOf(account);
+    // }
 
     /**
      * @notice Grants a specific role to an account.
