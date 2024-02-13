@@ -15,8 +15,8 @@ async function main() {
     // Wait for the contract to be deployed
     await spsV2.waitForDeployment();
 
+    // Log the newly deployed contract address
     console.log("SPSv2 deployed to:",await spsV2.getAddress());
-
 }
 
 // We recommend this pattern to be able to use async/await everywhere

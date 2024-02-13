@@ -27,6 +27,11 @@ const config: HardhatUserConfig = {
       accounts: privateKey, // Use the private key from the environment variables, filtering out undefined or empty
       chainId: 421614, // Arbitrum Goerli chain ID
     },
+    optimismSepolia: {
+      url: "https://sepolia.optimism.io", // Verify this RPC URL
+      accounts: privateKey,
+      chainId: 11155111, // Verify this chain ID
+    },
   },
 };
 
