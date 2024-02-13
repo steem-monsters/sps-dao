@@ -284,7 +284,7 @@
 			},
 			{
 				"inputs": [],
-				"name": "DEFAULT_ADMIN_ROLE",
+				"name": "BURNER_ROLE",
 				"outputs": [
 					{
 						"internalType": "bytes32",
@@ -297,7 +297,7 @@
 			},
 			{
 				"inputs": [],
-				"name": "DELEGATION_TYPEHASH",
+				"name": "DEFAULT_ADMIN_ROLE",
 				"outputs": [
 					{
 						"internalType": "bytes32",
@@ -415,6 +415,19 @@
 					}
 				],
 				"name": "burnFrom",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "burnTokens",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -810,6 +823,11 @@
 				"burnFrom(address,uint256)": {
 					"details": "Destroys a `value` amount of tokens from `account`, deducting from the caller's allowance. See {ERC20-_burn} and {ERC20-allowance}. Requirements: - the caller must have allowance for ``accounts``'s tokens of at least `value`."
 				},
+				"burnTokens(uint256)": {
+					"params": {
+						"amount": "The amount of tokens to burn."
+					}
+				},
 				"constructor": {
 					"details": "Sets the values for {name} and {symbol}, initializes EIP-712 domain separator. All two of these values are immutable: they can only be set once during construction."
 				},
@@ -878,6 +896,9 @@
 		"userdoc": {
 			"kind": "user",
 			"methods": {
+				"burnTokens(uint256)": {
+					"notice": "Custom burn function with additional logic Allows token holders to burn their tokens, reducing the total supply."
+				},
 				"grantRole(bytes32,address)": {
 					"notice": "Grants a specific role to an account. Only accounts with the admin role for the given role can grant it to others. Emits a {RoleGranted} event."
 				},
@@ -1068,11 +1089,11 @@
 			]
 		},
 		"contracts/SPSv2.sol": {
-			"keccak256": "0xca9fd3303daf472cb0af5317aeb4aa86e114b03f083cfcd35c30680f4363da70",
+			"keccak256": "0xa5a5c8479749683ff8189c9896619a37757fe5ea9f8912446ca5a57f1b7e7e8c",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://b45ce34ecc3d0401eb286a869a569f37addc2cb829213c96eafd9b7210661379",
-				"dweb:/ipfs/QmWUohkRpeQaG8KfPdN1qHi4rQWKY7g7cPkgHtDR4HLWu1"
+				"bzz-raw://b00e28213eb251c82c0fdb0426091380533246621404beaaaa42de9ac90c4dd7",
+				"dweb:/ipfs/QmUgeCytV3iAEfrYUEhQv2A16LgYahCEGEBaYXHHrpXN3R"
 			]
 		}
 	},
