@@ -25,12 +25,12 @@ const config: HardhatUserConfig = {
     arbitrumSepolia: {
       url: "https://sepolia-rollup.arbitrum.io/rpc", // Replace with your RPC URL
       accounts: privateKey, // Use the private key from the environment variables, filtering out undefined or empty
-      chainId: 421614, // Arbitrum Goerli chain ID
+      chainId: 421614, // Arbitrum Arbitrum Sepolia chain ID
     },
     optimismSepolia: {
       url: "https://sepolia.optimism.io", // Verify this RPC URL
       accounts: privateKey,
-      chainId: 11155111, // Verify this chain ID
+      chainId: 11155420, // Verify this chain ID
     },
   },
 };

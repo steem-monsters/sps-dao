@@ -7,14 +7,15 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title Splintershards (SPS) Token Contract
  * @dev Extends ERC20 Token Standard basic implementation with burnability, access control, and anti-reentrancy features.
- * Includes functionality for token minting, delegation of voting power, and signature-based delegation.
+ * Includes functionality for token minting and pausing.
  * Utilizes EIP712 for typed structured data hashing and signing.
  */
-contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712 {
+contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712, Pausable {
     
     // Defining roles for the contract with unique identifiers.
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -38,9 +39,9 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712 {
      * @param to The address of the beneficiary that will receive the minted tokens.
      * @param amount The amount of tokens to mint.
      */
-    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant {
+    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant whenNotPaused {
         require(to != address(0), "SPS::mint: cannot mint to the zero address");
-        require(amount > 0, "SPS::customBurn: mint amount must be greater than 0");
+        require(amount > 0, "SPS::mint: mint amount must be greater than 0");
         _mint(to, amount);
     }
 
@@ -49,7 +50,7 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712 {
      * Allows token holders to burn their tokens, reducing the total supply.
      * @param amount The amount of tokens to burn.
      */
-    function burnTokens(uint256 amount) external onlyRole(BURNER_ROLE) nonReentrant {
+    function burnTokens(uint256 amount) external onlyRole(BURNER_ROLE) nonReentrant whenNotPaused {
         require(amount > 0, "SPS::burnTokens: burn amount must be greater than 0");
         _burn(_msgSender(), amount);
     }
@@ -92,5 +93,44 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712 {
     function renounceRole(bytes32 role, address account) public override nonReentrant {
         require(account == msg.sender, "SPS::renounceRole: can only renounce roles for self");
         super.renounceRole(role, account);
+    }
+
+    /**
+     * @dev Pauses all functions affected by `whenNotPaused`.
+     * Can only be called by the account with the admin role.
+     */
+    function pause() external onlyRole(ADMIN_ROLE) {
+        _pause();
+    }
+
+    /**
+     * @dev Unpauses all functions affected by `whenNotPaused`.
+     * Can only be called by the account with the admin role.
+     */
+    function unpause() external onlyRole(ADMIN_ROLE) {
+        _unpause();
+    }
+
+    /**
+     * @dev Override of the `transfer` function to include the `whenNotPaused` modifier.
+     * This ensures that token transfers are paused when the contract is paused.
+     * @param to The address to transfer tokens to.
+     * @param amount The amount of tokens to transfer.
+     * @return success A boolean value indicating whether the operation succeeded.
+     */
+    function transfer(address to, uint256 amount) public override whenNotPaused returns (bool) {
+        return super.transfer(to, amount);
+    }
+
+    /**
+     * @dev Override of the `transferFrom` function to include the `whenNotPaused` modifier.
+     * This ensures that token transfers are paused when the contract is paused.
+     * @param from The address to transfer tokens from.
+     * @param to The address to transfer tokens to.
+     * @param amount The amount of tokens to be transferred.
+     * @return success A boolean value indicating whether the operation succeeded.
+     */
+    function transferFrom(address from, address to, uint256 amount) public override whenNotPaused returns (bool) {
+        return super.transferFrom(from, to, amount);
     }
 }
