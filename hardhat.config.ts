@@ -23,14 +23,34 @@ const config: HardhatUserConfig = {
   },
   networks: {
     arbitrumSepolia: {
-      url: "https://sepolia-rollup.arbitrum.io/rpc", // Replace with your RPC URL
-      accounts: privateKey, // Use the private key from the environment variables, filtering out undefined or empty
-      chainId: 421614, // Arbitrum Arbitrum Sepolia chain ID
+      url: "https://sepolia-rollup.arbitrum.io/rpc",
+      accounts: privateKey,
+      chainId: 421614,
     },
     optimismSepolia: {
-      url: "https://sepolia.optimism.io", // Verify this RPC URL
+      url: "https://sepolia.optimism.io",
       accounts: privateKey,
-      chainId: 11155420, // Verify this chain ID
+      chainId: 11155420,
+    },
+    polygonGoerli: {
+      url: "https://matic-testnet-archive-rpc.bwarelabs.com", // This is an example; please use an up-to-date RPC URL
+      accounts: privateKey,
+      chainId: 80001, // Chain ID for Polygon Mumbai (Goerli) Testnet
+    },
+    avalancheFuji: {
+      url: "https://api.avax-test.network/ext/bc/C/rpc", // This is an example; please use an up-to-date RPC URL
+      accounts: privateKey,
+      chainId: 43113, // Chain ID for Avalanche Fuji Testnet
+    },
+    bnbTestnet: {
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545", // This is an example; please use an up-to-date RPC URL
+      accounts: privateKey,
+      chainId: 97, // Chain ID for BNB Chain Testnet
+    },
+    goerli: {
+      url: "https://goerli.infura.io/v3/yourInfuraProjectId", // Replace with your Infura Project ID
+      accounts: privateKey,
+      chainId: 5, // Chain ID for Ethereum Goerli Testnet
     },
   },
 };

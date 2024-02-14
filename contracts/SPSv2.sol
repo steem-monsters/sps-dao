@@ -22,6 +22,13 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712, Pa
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
+    /// @notice Event used for pausing and unpausing this contract
+    event ContracPause(address indexed sender, string externalAddress);
+    /// @notice Event used for renouncing the message senders role
+    event RenounceRole(address indexed sender, string externalAddress);
+    /// @notice Event used for cross-chain transfers
+    event BridgeTransfer(address indexed sender, address indexed receiver, uint256 amount, string externalAddress);
+
     /**
      * @dev Sets the values for {name} and {symbol}, initializes EIP-712 domain separator.
      * All two of these values are immutable: they can only be set once during construction.
@@ -91,6 +98,7 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712, Pa
      * @param account The address that is renouncing the role. Must be the transaction sender.
      */
     function renounceRole(bytes32 role, address account) public override nonReentrant {
+        emit RenounceRole(msg.sender, "SPS::Renounced Role");
         require(account == msg.sender, "SPS::renounceRole: can only renounce roles for self");
         super.renounceRole(role, account);
     }
@@ -100,6 +108,7 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712, Pa
      * Can only be called by the account with the admin role.
      */
     function pause() external onlyRole(ADMIN_ROLE) {
+        emit ContracPause(msg.sender, "SPS::Pause Contract");
         _pause();
     }
 
@@ -108,6 +117,7 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712, Pa
      * Can only be called by the account with the admin role.
      */
     function unpause() external onlyRole(ADMIN_ROLE) {
+        emit ContracPause(msg.sender, "SPS::Unpause Contract");
         _unpause();
     }
 
@@ -119,6 +129,9 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712, Pa
      * @return success A boolean value indicating whether the operation succeeded.
      */
     function transfer(address to, uint256 amount) public override whenNotPaused returns (bool) {
+        require(src != address(0), "SPS::transfer: cannot transfer from the zero address");
+        require(dst != address(0), "SPS::transfer: cannot transfer to the zero address");
+
         return super.transfer(to, amount);
     }
 
@@ -133,4 +146,27 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712, Pa
     function transferFrom(address from, address to, uint256 amount) public override whenNotPaused returns (bool) {
         return super.transferFrom(from, to, amount);
     }
+
+        /**
+     * @notice Transfer tokens to cross-chain bridge
+     * @param bridgeAddress The address of the bridge account
+     * @param rawAmount The amount of tokens transfered
+     * @param externalAddress The address on another chain
+     */
+     function bridgeTransfer(address bridgeAddress, uint256 rawAmount, string calldata externalAddress) external returns(bool) {
+         emit BridgeTransfer(msg.sender, bridgeAddress, rawAmount, externalAddress);
+         transfer(bridgeAddress, rawAmount);
+     }
+
+     /**
+      * @notice Transfer tokens from address to cross-chain bridge
+      * @param sourceAddress The address of the source account
+      * @param bridgeAddress The address of the bridge account
+      * @param rawAmount The amount of tokens transfered
+      * @param externalAddress The address on another chain
+      */
+     function bridgeTransferFrom(address sourceAddress, address bridgeAddress, uint256 rawAmount, string calldata externalAddress) external returns(bool) {
+         emit BridgeTransfer(sourceAddress, bridgeAddress, rawAmount, externalAddress);
+         transferFrom(sourceAddress, bridgeAddress, rawAmount);
+     }
 }

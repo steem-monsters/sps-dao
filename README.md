@@ -23,11 +23,6 @@ The Splintershards (SPS) contract is an advanced ERC-20 token that incorporates 
 
 - Tokens can be burned by any token holder to reduce the total supply.
 
-### Delegating Voting Power
-
-- `delegate(address delegatee)`: Delegates the caller’s voting power to the `delegatee`.
-- `delegateBySig(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s)`: Delegates voting power via an off-chain signature, facilitating gasless transactions.
-
 ### Role Management
 
 - `grantRole(bytes32 role, address account)`: Grants a role to an account. Can only be called by accounts with the admin role for the given role.
