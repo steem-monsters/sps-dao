@@ -129,9 +129,7 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712, Pa
      * @return success A boolean value indicating whether the operation succeeded.
      */
     function transfer(address to, uint256 amount) public override whenNotPaused returns (bool) {
-        require(src != address(0), "SPS::transfer: cannot transfer from the zero address");
-        require(dst != address(0), "SPS::transfer: cannot transfer to the zero address");
-
+        require(to != address(0), "SPS::transfer: cannot transfer to the zero address");
         return super.transfer(to, amount);
     }
 
@@ -156,6 +154,7 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712, Pa
      function bridgeTransfer(address bridgeAddress, uint256 rawAmount, string calldata externalAddress) external returns(bool) {
          emit BridgeTransfer(msg.sender, bridgeAddress, rawAmount, externalAddress);
          transfer(bridgeAddress, rawAmount);
+         return true;
      }
 
      /**
@@ -168,5 +167,6 @@ contract SPS is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, EIP712, Pa
      function bridgeTransferFrom(address sourceAddress, address bridgeAddress, uint256 rawAmount, string calldata externalAddress) external returns(bool) {
          emit BridgeTransfer(sourceAddress, bridgeAddress, rawAmount, externalAddress);
          transferFrom(sourceAddress, bridgeAddress, rawAmount);
+         return true;
      }
 }
